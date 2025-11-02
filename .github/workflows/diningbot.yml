@@ -1,7 +1,7 @@
 name: DiningBot Daily Digest
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
   schedule:
     # 14:00 UTC (approx. 6:00 AM Pacific Standard Time / 7:00 AM Pacific Daylight Time)
     - cron: "0 14 * * *"
