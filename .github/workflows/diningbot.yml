@@ -32,4 +32,4 @@ jobs:
           DININGBOT_SMTP_USE_TLS: ${{ secrets.DININGBOT_SMTP_USE_TLS }}
           DININGBOT_EMAIL_SENDER: ${{ secrets.DININGBOT_EMAIL_SENDER }}
           DININGBOT_EMAIL_RECIPIENTS: ${{ secrets.DININGBOT_EMAIL_RECIPIENTS }}
-        run: python main.py --output menu.html
+        run: python main.py
