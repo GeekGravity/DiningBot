@@ -1,0 +1,29 @@
+name: Keepalive Ping
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every 15 minutes to keep the Render app warm
+    - cron: "*/10 * * * *"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: keepalive-ping
+      cancel-in-progress: true
+    steps:
+      - name: Ping site
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://diningbot.onrender.com/"
+          echo "Pinging $url"
+          http_code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --connect-timeout 10 --max-time 20 --retry 2 --retry-delay 5 "$url")
+          echo "Status: $http_code"
+          if [[ "$http_code" -ge 400 || "$http_code" -lt 200 ]]; then
+            echo "Ping failed with HTTP $http_code"
+            exit 1
+          fi
