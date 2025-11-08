@@ -15,9 +15,9 @@ from supabase import create_client
 PERIOD_KEYS = ("breakfast", "lunch", "dinner")
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_ANON_KEY = os.environ["SUPABASE_ANON_KEY"]
 BASE_URL = os.environ["BASE_URL"]
-supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 @dataclass
 class EmailSettings:
@@ -35,6 +35,8 @@ def _split_list(value: Optional[str]) -> List[str]:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
 
+def store_daily_html(date: str, html: str) -> None:
+    supabase.table("email_format").upsert({"date": date, "html": html}).execute()
 
 def load_email_settings() -> EmailSettings:
     """Load SMTP settings from environment variables."""
@@ -123,7 +125,7 @@ def send_email_helper(settings: EmailSettings, subject: str, html_body: str, tex
 
 def send_email(date: str, html_output: str, periods: dict[str, dine_api.Period]) -> None:  # type: ignore[attr-defined]
     """Load email settings and dispatch the menu email."""
-
+    store_daily_html(date, html_output)
     try:
         settings = load_email_settings()
     except ValueError as exc:
