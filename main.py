@@ -1,6 +1,7 @@
 """DiningBot entry point that fetches today's menu and emails it."""
 
 import datetime as _dt
+import zoneinfo
 import logging
 
 from dotenv import load_dotenv
@@ -17,6 +18,7 @@ def main() -> int:
 
     load_dotenv()
     logging.basicConfig(level=logging.INFO)
+    pacific = zoneinfo.ZoneInfo("America/Los_Angeles")
     date = _dt.date.today().isoformat()
 
     # Fetch and parse menu
