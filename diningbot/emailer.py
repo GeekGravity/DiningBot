@@ -1,4 +1,4 @@
-"""Email helpers for sending menu summaries."""
+﻿"""Email helpers for sending menu summaries."""
 from __future__ import annotations
 
 import os
@@ -37,6 +37,23 @@ def _split_list(value: Optional[str]) -> List[str]:
 
 def store_daily_html(date: str, html: str) -> None:
     supabase.table("email_format").upsert({"date": date, "html": html}).execute()
+
+def load_cached_email_html(date: str) -> Optional[str]:
+    """Return cached HTML content for a given date."""
+    res = (
+        supabase.table("email_format")
+        .select("html")
+        .eq("date", date)
+        .limit(1)
+        .execute()
+    )
+    rows = res.data or []
+    if not rows:
+        return None
+    html_value = rows[0].get("html")
+    if not html_value:
+        return None
+    return html_value
 
 def load_email_settings() -> EmailSettings:
     """Load SMTP settings from environment variables."""
@@ -122,6 +139,31 @@ def send_email_helper(settings: EmailSettings, subject: str, html_body: str, tex
 
             client.sendmail(settings.sender, [rcpt], message.as_string())
             time.sleep(1)
+
+def send_email_to_one(recipient: str, html_body: str, date: str) -> None:
+    """Send cached HTML content to a single recipient."""
+    try:
+        settings = load_email_settings()
+    except ValueError as exc:
+        raise RuntimeError(f"Invalid email settings: {exc}") from exc
+
+    subject = f"Dining Menu - {date}"
+    text_body = f"Dining menu for {date}. Please view the HTML version for full details."
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = f"SFU Dining Menu <{settings.sender}>"
+    message["To"] = recipient
+
+    message.attach(MIMEText(text_body, "plain", "utf-8"))
+    message.attach(MIMEText(html_body, "html", "utf-8"))
+
+    with smtplib.SMTP(settings.host, settings.port, timeout=20) as client:
+        if settings.use_tls:
+            client.starttls()
+        if settings.username and settings.password:
+            client.login(settings.username, settings.password)
+        client.sendmail(settings.sender, [recipient], message.as_string())
 
 def send_email(date: str, html_output: str, periods: dict[str, dine_api.Period]) -> None:  # type: ignore[attr-defined]
     """Load email settings and dispatch the menu email."""
